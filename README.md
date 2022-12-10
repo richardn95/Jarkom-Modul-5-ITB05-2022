@@ -41,6 +41,108 @@ Untuk subnetting yang kami gunakan adalah **VLSM** dengan pembagian ip seperti b
 
 ![tabel_vlsm](img/tabel_vlsm.png)
 
+Berikut ini adalah **konfigurasi network pada setiap node**
+
+[ Strix ]
+```
+auto eth0
+iface eth0 inet dhcp
+
+# Static config for eth1
+auto eth1
+iface eth1 inet static
+	address 10.47.7.253
+	netmask 255.255.255.252
+
+auto eth2
+iface eth2 inet static
+	address 10.47.7.249
+	netmask 255.255.255.252
+```
+[ Westalis ]
+```
+auto eth0
+iface eth0 inet static
+	address 10.47.7.250
+	netmask 255.255.255.252
+
+auto eth1
+iface eth1 inet static
+	address 10.47.7.241
+	netmask 255.255.255.248
+
+auto eth2
+iface eth2 inet static
+	address 10.47.0.1
+	netmask 255.255.252.0
+
+auto eth3
+iface eth3 inet static
+	address 10.47.7.129
+	netmask 255.255.255.192
+```
+[ Ostania ]
+```
+auto eth0
+iface eth0 inet static
+	address 10.47.7.254
+	netmask 255.255.255.252
+
+auto eth1
+iface eth1 inet static
+	address 10.47.7.225
+	netmask 255.255.255.248
+
+auto eth2
+iface eth2 inet static
+	address 10.47.4.1
+	netmask 255.255.254.0
+
+auto eth3
+iface eth3 inet static
+	address 10.47.6.1
+	netmask 255.255.255.0
+```
+[ Eden ]
+```
+auto eth0
+iface eth0 inet static
+	address 10.47.7.242
+	netmask 255.255.255.248
+	gateway 10.47.7.241
+```
+[ WISE ]
+```
+auto eth0
+iface eth0 inet static
+	address 10.47.7.243
+	netmask 255.255.255.248
+	gateway 10.47.7.241
+```
+[ Garden ]
+```
+# A9
+auto eth0
+iface eth0 inet static
+	address 10.47.7.226
+	netmask 255.255.255.248
+	gateway 10.47.7.225
+```
+[ SSS ]
+```
+# A9
+auto eth0
+iface eth0 inet static
+	address 10.47.7.227
+	netmask 255.255.255.248
+	gateway 10.47.7.225
+```
+[ Blackbell ] [ Briar ] [ Desmond ] [ Forger ]
+```
+auto eth0
+iface eth0 inet dhcp
+```
+
 Dibawah ini adalah setting Router agar semua rute dapat terhubung
 ```
 # Ke Ostania
@@ -166,6 +268,10 @@ echo "$HOSTNAME" > /var/www/html/index.html
 ```
 Jika dibuka webnya akan terlihat nama hostnya
 
+Hasilnya semua node dapat ping dengan sesama
+
+![soal_huruf](img/soal0.png)
+
 # Soal-1
 Agar topologi yang kalian buat dapat **mengakses** keluar, kalian diminta untuk mengkonfigurasi Strix menggunakan **iptables**, tetapi Loid **tidak** ingin menggunakan **MASQUERADE**.
 
@@ -180,7 +286,6 @@ Kalian diminta untuk melakukan drop semua **TCP** dan **UDP** dari luar Topologi
 
 Untuk melakukan drop TCP dan UDP ke DHCP server, kami menggunakan perintah atau rules seperti berikut ini pada **Strix**
 ```
-
 iptables -A FORWARD -d 10.47.7.243 -i eth0 -p tcp -j LOG --log-level 5
 iptables -A FORWARD -d 10.47.7.243 -i eth0 -p udp -j LOG --log-level 5
 
@@ -206,6 +311,13 @@ iptables -A INPUT -p icmp -m connlimit --connlimit-above 2 --connlimit-mask 0 -j
 
 service rsyslog restart
 ```
+Hasilnya
+
+![soal3_1](img/soal3_1.png)
+
+![soal3_2](img/soal3_2.png) 
+
+![soal3_3](img/soal3_3.png)
 # Soal-4
 Akses menuju Web Server hanya diperbolehkan disaat jam kerja yaitu **Senin sampai Jumat** pada pukul **07.00 - 16.00.**
 
@@ -227,16 +339,20 @@ iptables -A FORWARD -d 10.47.7.243 -m time --timestart 16:01 --timestop 23:59 --
 iptables -A FORWARD -d 10.47.7.226 -m time --weekdays Sat,Sun -j REJECT
 iptables -A FORWARD -d 10.47.7.226 -m time --timestart 00:00 --timestop 06:59 --weekdays Mon,Tue,Wed,Thu,Fri -j REJECT
 iptables -A FORWARD -d 10.47.7.226 -m time --timestart 16:01 --timestop 23:59 --weekdays Mon,Tue,Wed,Thu,Fri -j REJECT
-
-iptables -A PREROUTING -t nat -p tcp -d 10.47.7.226 --dport 80 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.47.7.226:80
-iptables -A PREROUTING -t nat -p tcp -d 10.47.7.226 --dport 80 -j DNAT --to-destination 10.47.7.227:80
-
 ```
+Hasilnya jika diluar waktu yang di-*setting*
+
+![soal4_1](img/soal4_1.png)
+
+Hasilnya jika dalam waktu yang di-*setting*
+
+![soal4_2](img/soal4_2.png)
+
+![soal4_3](img/soal4_3.png)
 # Soal-5
 Karena kita memiliki 2 Web Server, Loid ingin **Ostania** diatur sehingga setiap request dari client yang mengakses **Garden** dengan port 80 akan didistribusikan secara bergantian pada **SSS dan Garden** secara berurutan dan request dari client yang mengakses SSS dengan port 443 akan didistribusikan secara bergantian pada Garden dan SSS secara berurutan.
 
-
-
+Berikut ini adalah setting yang kami lakukan pada **Ostania** sebagai router penghubung webserver
 ```
 iptables -A PREROUTING -t nat -p tcp -d 10.47.7.226 --dport 80 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.47.7.226:80
 iptables -A PREROUTING -t nat -p tcp -d 10.47.7.226 --dport 80 -j DNAT --to-destination 10.47.7.227:80
@@ -244,6 +360,14 @@ iptables -A PREROUTING -t nat -p tcp -d 10.47.7.226 --dport 80 -j DNAT --to-dest
 iptables -A PREROUTING -t nat -p tcp -d 10.47.7.227 --dport 443 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.47.7.227:443
 iptables -A PREROUTING -t nat -p tcp -d 10.47.7.227 --dport 443 -j DNAT --to-destination 10.47.7.226:443
 ```
+
+Hasilnya jika melakukan **dua** kali lynx pada `10.47.7.242`
+
+![soal5_1](img/soal4_3.png)
+
+![soal5_1](img/soal5_1.png)
+
+![soal5_3](img/soal5_2.png)
 # Soal-6
 Karena Loid ingin tau **paket apa saja** yang di-drop, maka di setiap node server dan router ditambahkan logging paket yang di-drop dengan standard syslog level.
 
